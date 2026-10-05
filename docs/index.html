@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Robotic shoulder</title>
+<style>
+:root{--bg:#0f1115;--fg:#e8e8ea;--mut:#9aa0a6;--card:#181b22;--acc:#f5b301}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px} h1{margin:0 0 6px} p,li{color:var(--mut)}
+img{width:100%;border-radius:10px;border:1px solid #262a33} b{color:var(--fg)}
+code{background:var(--card);padding:2px 6px;border-radius:4px}
+</style></head><body><main>
+<h1>Robotic shoulder — big arm, small motors</h1>
+<p>A 4.8 m two-stage arm that moves <b>50 kg</b> with two <b>windshield-wiper motors</b> (~50 W each),
+thanks to a self-locking 1:50 worm gear and a chain, winding steel cables. Simulated in MuJoCo.</p>
+<img src="demo.gif" alt="simulation of the shoulder moving">
+<ul>
+<li>Synchronized cables: never slack, whatever the direction of the load</li>
+<li>DC-motor curve, rotor inertia, brakes, steel cables with real stiffness</li>
+<li>Cart on rails + turntable, reachable-volume halo and automatic sweep</li>
+</ul>
+<p>Run it yourself: <code>pip install mujoco numpy pillow</code> then <code>python live.py</code> —
+source on <a style="color:var(--acc)" href="https://github.com/">GitHub</a>.</p>
+</main></body></html>

@@ -1,0 +1,382 @@
+<mujoco model="shoulder">
+
+  <!-- Lengths are in METERS. size is always HALF of the measure.
+       Cross-section of every box beam: 5 cm square (half = 0.025).
+       They are hollow steel tubes, 3 mm wall: 4.427 kg per meter
+       (section 0.05^2 - 0.044^2 = 0.000564 m2, times 7850 kg/m3).
+       mass of each beam = 4.427 x its length. -->
+
+  <!-- Axis arrows: smaller (default 1 and 0.1) -->
+  <visual>
+    <scale framelength="0.2" framewidth="0.02"/>
+  </visual>
+
+  <asset>
+    <material name="metal" rgba="0.6 0.62 0.65 1" specular="0.8" shininess="0.8"/>
+    <!-- 70% transparent (alpha 0.3): the clone at y = -0.1, to see inside -->
+    <material name="metal_transparent" rgba="0.6 0.62 0.65 0.3" specular="0.8" shininess="0.8"/>
+  </asset>
+
+  <worldbody>
+    <!-- The floor, at height 0 -->
+    <geom type="plane" size="5 5 0.1" rgba="0.4 0.4 0.4 1"/>
+
+    <!-- RAILS: two 2x2 cm linear guides, 3 m long, parallel to y (bottom at 4.735: they pass 1 cm
+         above the AB beams of the triangles), under the ends of the T head (x = +-0.2).
+         Their top is at 4.755 m: the T's guide blocks sit on it.
+         At each end of each rail a block stops the carriage (it can't derail).
+         For now they are fixed in space: the supports (pillars or ceiling) are still to be decided. -->
+    <geom name="rail_p" type="box" size="0.01 0.01" fromto="0.2 -1.5 4.745  0.2 1.5 4.745" material="metal"/>
+    <geom name="rail_n" type="box" size="0.01 0.01" fromto="-0.2 -1.5 4.745  -0.2 1.5 4.745" material="metal"/>
+    <geom name="stop_end_p" type="box" size="0.04 0.025 0.0225" pos="0.2 1.475 4.7775" rgba="0.85 0.65 0.1 1"/>
+    <geom name="stop_start_p" type="box" size="0.04 0.025 0.0225" pos="0.2 -1.475 4.7775" rgba="0.85 0.65 0.1 1"/>
+    <geom name="stop_end_n" type="box" size="0.04 0.025 0.0225" pos="-0.2 1.475 4.7775" rgba="0.85 0.65 0.1 1"/>
+    <geom name="stop_start_n" type="box" size="0.04 0.025 0.0225" pos="-0.2 -1.475 4.7775" rgba="0.85 0.65 0.1 1"/>
+
+    <!-- CART: four motors at the ends of the rails, under the rail.
+         r  = rail ends on the A side (x = +0.2), r' = A' side (x = -0.2);
+         front = end at +y, back = end at -y. Each motor winds a cable that goes to the pulley
+         on the opposite side (r' -> A, r -> A') and comes back to be anchored on the other rail, 10 cm from the end.
+         Seen from above the four cables make two X's. -->
+    <geom name="spool_r2_front" type="cylinder" size="0.03 0.01" pos="-0.2 1.53 4.68" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+    <geom name="motor_r2_front" type="cylinder" size="0.025 0.04" pos="-0.2 1.53 4.625" mass="1" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+    <site name="motor_r2_front" pos="-0.2 1.53 4.68" size="0.005"/>
+    <site name="anchor_r2_front" pos="0.2 1.4 4.68" size="0.012" rgba="1 0 0 1"/>
+    <geom name="spool_r2_back" type="cylinder" size="0.03 0.01" pos="-0.2 -1.53 4.68" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+    <geom name="motor_r2_back" type="cylinder" size="0.025 0.04" pos="-0.2 -1.53 4.625" mass="1" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+    <site name="motor_r2_back" pos="-0.2 -1.53 4.68" size="0.005"/>
+    <site name="anchor_r2_back" pos="0.2 -1.4 4.68" size="0.012" rgba="1 0 0 1"/>
+    <geom name="spool_r_front" type="cylinder" size="0.03 0.01" pos="0.2 1.53 4.66" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+    <geom name="motor_r_front" type="cylinder" size="0.025 0.04" pos="0.2 1.53 4.605" mass="1" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+    <site name="motor_r_front" pos="0.2 1.53 4.66" size="0.005"/>
+    <site name="anchor_r_front" pos="-0.2 1.4 4.66" size="0.012" rgba="1 0 0 1"/>
+    <geom name="spool_r_back" type="cylinder" size="0.03 0.01" pos="0.2 -1.53 4.66" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+    <geom name="motor_r_back" type="cylinder" size="0.025 0.04" pos="0.2 -1.53 4.605" mass="1" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+    <site name="motor_r_back" pos="0.2 -1.53 4.66" size="0.005"/>
+    <site name="anchor_r_back" pos="-0.2 -1.4 4.66" size="0.012" rgba="1 0 0 1"/>
+
+    <!-- The structure is doubled: two identical clones, one at y = +0.1 (names _p) and one
+         at y = -0.1 (names _n), 20 cm apart. Same x and z.
+         Bars parallel to y connect them at the joints, at the fixed cable points
+         (standard 5x5 bars) and at the pulleys (round 1.5 cm pins).
+         Cables and pulleys are not doubled: they sit in the middle, between the two clones.
+
+         Everything in the same body, so everything is welded together.
+         The origin is the center of the T head, 4.80 m above the floor.
+         Positions in here are measured from that point (x z pairs,
+         y is the clone's):
+           B = (0 -0.1)    bottom of the T stem, right angle
+           C = (0 -0.3)    20 cm below B, pivot of the arm
+           A = (0.5 -0.1)  50 cm from B towards +x
+           A'= (-0.5 -0.1) 50 cm from B towards -x
+           F = (0.09285 -0.26286)  10 cm from C along CA (F' mirrored)
+
+         fromto gives the two ends of the beam axis,
+         and size is only half of the cross-section. -->
+    <body name="T" pos="0 0 4.8">
+
+      <!-- SLIDE: the T (with everything it carries) runs along the rails, y axis.
+           Travel limit +-1.31 m: where a guide block touches the stop at the end of the rail.
+           frictionloss = friction of the recirculating-ball guide blocks (~0.5% of the weight, ~10 N). -->
+      <joint name="Y" type="slide" axis="0 1 0" range="-1.31 1.31" frictionloss="10"/>
+
+      <!-- Guide blocks: four linear-guide carriages under the head, where it crosses the rails
+           (8 x 7 x 2 cm, 0.4 kg each). They wrap the rail and slide on it. -->
+      <geom name="block_pp" type="box" mass="0.4" size="0.035 0.04 0.01" pos="0.2 0.1 -0.035" rgba="0.2 0.25 0.3 1"/>
+      <geom name="block_pn" type="box" mass="0.4" size="0.035 0.04 0.01" pos="0.2 -0.1 -0.035" rgba="0.2 0.25 0.3 1"/>
+      <geom name="block_np" type="box" mass="0.4" size="0.035 0.04 0.01" pos="-0.2 0.1 -0.035" rgba="0.2 0.25 0.3 1"/>
+      <geom name="block_nn" type="box" mass="0.4" size="0.035 0.04 0.01" pos="-0.2 -0.1 -0.035" rgba="0.2 0.25 0.3 1"/>
+
+      <geom name="head_p" type="box" mass="2.214" size="0.25 0.025 0.025" pos="0 0.1 0" material="metal"/>
+      <geom name="stem_p" type="box" mass="0.443" size="0.025 0.025 0.05" pos="0 0.1 -0.05" material="metal"/>
+      <geom name="head_n" type="box" mass="2.214" size="0.25 0.025 0.025" pos="0 -0.1 0" material="metal_transparent"/>
+      <geom name="stem_n" type="box" mass="0.443" size="0.025 0.025 0.05" pos="0 -0.1 -0.05" material="metal_transparent"/>
+      <geom name="bar_T"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0       -0.1  0         0       0.1  0"       material="metal"/>
+      <!-- TURNTABLE: everything below the T rotates around the vertical axis through
+           B (where B meets the T): rotation only in the x-y plane.
+           Range from -65 to +45 degrees (checked with a cable/part interference scan):
+           - the cart cables don't touch anything up to +-66 degrees;
+           - but the chain and the big gear of stage 1 (top at 4.757 m) touch the
+             rail (bottom at 4.735 m) at +46 degrees; on the other side at -66. -->
+      <body name="turntable" pos="0 0 0">
+        <joint name="R" type="hinge" axis="0 0 1" pos="0 0 -0.1" range="-65 45"/>
+        <!-- Clone at y = +0.1 -->
+        <geom name="BC_p"  type="box" mass="0.885" size="0.025 0.025" fromto="0 0.1 -0.1   0 0.1 -0.3"   material="metal"/>
+        <geom name="AB_p"  type="box" mass="2.214" size="0.025 0.025" fromto="0 0.1 -0.1   0.5 0.1 -0.1" material="metal"/>
+        <geom name="CA_p"  type="box" mass="2.384" size="0.025 0.025" fromto="0 0.1 -0.3   0.5 0.1 -0.1" material="metal"/>
+        <geom name="A2B_p" type="box" mass="2.214" size="0.025 0.025" fromto="0 0.1 -0.1  -0.5 0.1 -0.1" material="metal"/>
+        <geom name="CA2_p" type="box" mass="2.384" size="0.025 0.025" fromto="0 0.1 -0.3  -0.5 0.1 -0.1" material="metal"/>
+
+        <!-- Clone at y = -0.1: 70% transparent -->
+        <geom name="BC_n"  type="box" mass="0.885" size="0.025 0.025" fromto="0 -0.1 -0.1   0 -0.1 -0.3"   material="metal_transparent"/>
+        <geom name="AB_n"  type="box" mass="2.214" size="0.025 0.025" fromto="0 -0.1 -0.1   0.5 -0.1 -0.1" material="metal_transparent"/>
+        <geom name="CA_n"  type="box" mass="2.384" size="0.025 0.025" fromto="0 -0.1 -0.3   0.5 -0.1 -0.1" material="metal_transparent"/>
+        <geom name="A2B_n" type="box" mass="2.214" size="0.025 0.025" fromto="0 -0.1 -0.1  -0.5 -0.1 -0.1" material="metal_transparent"/>
+        <geom name="CA2_n" type="box" mass="2.384" size="0.025 0.025" fromto="0 -0.1 -0.3  -0.5 -0.1 -0.1" material="metal_transparent"/>
+
+        <!-- Standard bars (5x5 tube, 20 cm from clone to clone: 0.885 kg)
+             at the joints (center of the T, B, C) and at the fixed cable points (F, F') -->
+        <geom name="bar_B"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0       -0.1 -0.1       0       0.1 -0.1"     material="metal"/>
+        <geom name="bar_C"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0       -0.1 -0.3       0       0.1 -0.3"     material="metal"/>
+        <geom name="bar_F"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0.09285 -0.1 -0.26286   0.09285 0.1 -0.26286" material="metal"/>
+        <geom name="bar_F2" type="box" mass="0.885" size="0.025 0.025" fromto="-0.09285 -0.1 -0.26286  -0.09285 0.1 -0.26286" material="metal"/>
+
+        <!-- Pulley pins at A and A': solid 1.5 cm steel rod
+             (pi x 0.0075^2 x 7850 = 1.387 kg/m, 20 cm: 0.277 kg) -->
+        <geom name="pin_A"  type="cylinder" mass="0.277" size="0.0075" fromto=" 0.5 -0.1 -0.1   0.5 0.1 -0.1" material="metal"/>
+        <geom name="pin_A2" type="cylinder" mass="0.277" size="0.0075" fromto="-0.5 -0.1 -0.1  -0.5 0.1 -0.1" material="metal"/>
+
+        <!-- GEARS start -->
+        <!-- GEARS: ratio 1:6. 10-tooth pinion (r 9.7 mm) on the small motor halfway along AB,
+             60-tooth big gear (r 57.3 mm, 0.243 kg) welded to the spool on pin A, ISO 04B chain (6 mm pitch).
+             The dynamics (inertias, torque) are in control.py. -->
+        <!-- side A -->
+        <geom name="gear_A" type="cylinder" size="0.0573 0.0015" pos="0.5000 0.0650 -0.1000" euler="90 0 0"
+              mass="0.243" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+        <geom name="pinion_A" type="cylinder" size="0.0097 0.0015" pos="0.2500 0.0650 -0.1000" euler="90 0 0"
+              mass="0.007" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+        <geom name="motor_A" type="cylinder" size="0.025 0.04" pos="0.2500 0.0225 -0.1000" euler="90 0 0"
+              mass="1.000" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+        <geom name="chain_A_1" type="box" size="0.002 0.0025" fromto="0.4891 0.0650 -0.0437  0.2482 0.0650 -0.0905"
+              mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+        <geom name="chain_A_2" type="box" size="0.002 0.0025" fromto="0.4891 0.0650 -0.1563  0.2482 0.0650 -0.1095"
+              mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+        <!-- side A' -->
+        <geom name="gear_A2" type="cylinder" size="0.0573 0.0015" pos="-0.5000 -0.0650 -0.1000" euler="90 0 0"
+              mass="0.243" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+        <geom name="pinion_A2" type="cylinder" size="0.0097 0.0015" pos="-0.2500 -0.0650 -0.1000" euler="90 0 0"
+              mass="0.007" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+        <geom name="motor_A2" type="cylinder" size="0.025 0.04" pos="-0.2500 -0.0225 -0.1000" euler="90 0 0"
+              mass="1.000" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+        <geom name="chain_A2_1" type="box" size="0.002 0.0025" fromto="-0.4891 -0.0650 -0.1563  -0.2482 -0.0650 -0.1095"
+              mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+        <geom name="chain_A2_2" type="box" size="0.002 0.0025" fromto="-0.4891 -0.0650 -0.0437  -0.2482 -0.0650 -0.0905"
+              mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+        <!-- GEARS end -->
+
+        <!-- CABLES (not doubled, between the clones). Cable 1 runs at y = +0.045,
+             cable 2 at y = -0.045: this way pulleys 2 and 2' sit side by side
+             on the same pin and don't overlap. -->
+
+        <!-- F and F': the fixed end of the cable, tied to bar F -->
+        <site name="F"  pos=" 0.09285  0.045 -0.26286" size="0.012" rgba="1 0 0 1"/>
+        <site name="F2" pos="-0.09285 -0.045 -0.26286" size="0.012" rgba="1 0 0 1"/>
+
+        <!-- Winders at A and A': 3 cm radius spool on the pin, turned by a
+             small motor. The cable ends at the center of the spool (site).
+             Solid steel r 3 cm x 2 cm: 0.444 kg. -->
+        <geom name="spool1" type="cylinder" mass="0.444" size="0.03 0.01" pos=" 0.5  0.045 -0.1" euler="90 0 0"
+              contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <geom name="spool2" type="cylinder" mass="0.444" size="0.03 0.01" pos="-0.5 -0.045 -0.1" euler="90 0 0"
+              contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <site name="A"  pos=" 0.5  0.045 -0.1" size="0.005"/>
+        <site name="A2" pos="-0.5 -0.045 -0.1" size="0.005"/>
+
+        <!-- The arm: two 1.7 m tubes, one per clone, hung from C with a joint.
+             Its origin is C, so positions in here start from C. -->
+        <body name="arm" pos="0 0 -0.3">
+          <!-- Rotation only, around y (along bar C): point 1 always stays
+               still and the arm moves only in the x-z plane.
+               MuJoCo computes mass and inertia from the parts' masses: compared to a
+               hollow tube the error on the inertia around y is below 0.1%. -->
+          <!-- Limit: at most 55 degrees either way (mechanical end stop) -->
+          <joint name="C" type="hinge" axis="0 1 0" range="-55 55"/>
+          <geom name="arm_p" type="box" mass="7.527" size="0.025 0.025" fromto="0  0.1 0  0  0.1 -1.7" material="metal"/>
+          <geom name="arm_n" type="box" mass="7.527" size="0.025 0.025" fromto="0 -0.1 0  0 -0.1 -1.7" material="metal_transparent"/>
+
+          <!-- Pin of pulleys 2 and 2', 25 cm above point 2 (which is at -1.7) -->
+          <geom name="pin_2" type="cylinder" mass="0.277" size="0.0075" fromto="0 -0.1 -1.45  0 0.1 -1.45" material="metal"/>
+
+          <!-- Pulleys 2 and 2' on the pin, frictionless. Solid steel r 3 cm x 2 cm: 0.444 kg.
+               The cable runs under them: the sidesite below each one tells MuJoCo which side. -->
+          <geom name="pulley2"  type="cylinder" mass="0.444" size="0.03 0.01" pos="0  0.045 -1.45" euler="90 0 0"
+                contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+          <geom name="pulley2b" type="cylinder" mass="0.444" size="0.03 0.01" pos="0 -0.045 -1.45" euler="90 0 0"
+                contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+          <site name="below2"  pos="0  0.045 -1.5" size="0.005"/>
+          <site name="below2b" pos="0 -0.045 -1.5" size="0.005"/>
+
+
+          <!-- ==================== STAGE 2 ====================
+               Copy of the first stage (without the T), welded at the bottom of arm 1-2.
+               Its frame is the T's one shifted: B' at -1.5, C' at -1.7 = point 2.
+               Side B'C' is the last 20 cm of arm 1-2 (not doubled).
+               Names = the first stage's + "_s2". -->
+          <body name="stage2" pos="0 0 -1.4">
+          <geom name="AB_p_s2"  type="box" mass="2.214" size="0.025 0.025" fromto="0 0.1 -0.1   0.5 0.1 -0.1" material="metal"/>
+          <geom name="CA_p_s2"  type="box" mass="2.384" size="0.025 0.025" fromto="0 0.1 -0.3   0.5 0.1 -0.1" material="metal"/>
+          <geom name="A2B_p_s2" type="box" mass="2.214" size="0.025 0.025" fromto="0 0.1 -0.1  -0.5 0.1 -0.1" material="metal"/>
+          <geom name="CA2_p_s2" type="box" mass="2.384" size="0.025 0.025" fromto="0 0.1 -0.3  -0.5 0.1 -0.1" material="metal"/>
+          <geom name="AB_n_s2"  type="box" mass="2.214" size="0.025 0.025" fromto="0 -0.1 -0.1   0.5 -0.1 -0.1" material="metal_transparent"/>
+          <geom name="CA_n_s2"  type="box" mass="2.384" size="0.025 0.025" fromto="0 -0.1 -0.3   0.5 -0.1 -0.1" material="metal_transparent"/>
+          <geom name="A2B_n_s2" type="box" mass="2.214" size="0.025 0.025" fromto="0 -0.1 -0.1  -0.5 -0.1 -0.1" material="metal_transparent"/>
+          <geom name="CA2_n_s2" type="box" mass="2.384" size="0.025 0.025" fromto="0 -0.1 -0.3  -0.5 -0.1 -0.1" material="metal_transparent"/>
+          <geom name="bar_B_s2"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0       -0.1 -0.1       0       0.1 -0.1"     material="metal"/>
+          <geom name="bar_C_s2"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0       -0.1 -0.3       0       0.1 -0.3"     material="metal"/>
+          <geom name="bar_F_s2"  type="box" mass="0.885" size="0.025 0.025" fromto=" 0.09285 -0.1 -0.26286   0.09285 0.1 -0.26286" material="metal"/>
+          <geom name="bar_F2_s2" type="box" mass="0.885" size="0.025 0.025" fromto="-0.09285 -0.1 -0.26286  -0.09285 0.1 -0.26286" material="metal"/>
+          <geom name="pin_A_s2"  type="cylinder" mass="0.277" size="0.0075" fromto=" 0.5 -0.1 -0.1   0.5 0.1 -0.1" material="metal"/>
+          <geom name="pin_A2_s2" type="cylinder" mass="0.277" size="0.0075" fromto="-0.5 -0.1 -0.1  -0.5 0.1 -0.1" material="metal"/>
+          <!-- GEARS_s2 start -->
+          <!-- GEARS_s2: ratio 1:3. 10-tooth pinion (r 9.7 mm) on the small motor halfway along AB,
+               30-tooth big gear (r 28.7 mm, 0.061 kg) welded to the spool on pin A, ISO 04B chain (6 mm pitch).
+               The dynamics (inertias, torque) are in control.py. -->
+          <!-- side A -->
+          <geom name="gear_A_s2" type="cylinder" size="0.0287 0.0015" pos="0.5000 0.0650 -0.1000" euler="90 0 0"
+                mass="0.061" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+          <geom name="pinion_A_s2" type="cylinder" size="0.0097 0.0015" pos="0.2500 0.0650 -0.1000" euler="90 0 0"
+                mass="0.007" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+          <geom name="motor_A_s2" type="cylinder" size="0.025 0.04" pos="0.2500 0.0225 -0.1000" euler="90 0 0"
+                mass="1.000" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+          <geom name="chain_A_1_s2" type="box" size="0.002 0.0025" fromto="0.4978 0.0650 -0.0714  0.2493 0.0650 -0.0903"
+                mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+          <geom name="chain_A_2_s2" type="box" size="0.002 0.0025" fromto="0.4978 0.0650 -0.1286  0.2493 0.0650 -0.1097"
+                mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+          <!-- side A' -->
+          <geom name="gear_A2_s2" type="cylinder" size="0.0287 0.0015" pos="-0.5000 -0.0650 -0.1000" euler="90 0 0"
+                mass="0.061" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+          <geom name="pinion_A2_s2" type="cylinder" size="0.0097 0.0015" pos="-0.2500 -0.0650 -0.1000" euler="90 0 0"
+                mass="0.007" contype="0" conaffinity="0" rgba="0.75 0.55 0.2 1"/>
+          <geom name="motor_A2_s2" type="cylinder" size="0.025 0.04" pos="-0.2500 -0.0225 -0.1000" euler="90 0 0"
+                mass="1.000" contype="0" conaffinity="0" rgba="0.1 0.15 0.35 1"/>
+          <geom name="chain_A2_1_s2" type="box" size="0.002 0.0025" fromto="-0.4978 -0.0650 -0.1286  -0.2493 -0.0650 -0.1097"
+                mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+          <geom name="chain_A2_2_s2" type="box" size="0.002 0.0025" fromto="-0.4978 -0.0650 -0.0714  -0.2493 -0.0650 -0.0903"
+                mass="0" contype="0" conaffinity="0" rgba="0.2 0.2 0.2 1"/>
+          <!-- GEARS_s2 end -->
+          <site name="F_s2"  pos=" 0.09285  0.045 -0.26286" size="0.012" rgba="1 0 0 1"/>
+          <site name="F2_s2" pos="-0.09285 -0.045 -0.26286" size="0.012" rgba="1 0 0 1"/>
+          <geom name="spool1_s2" type="cylinder" mass="0.444" size="0.03 0.01" pos=" 0.5  0.045 -0.1" euler="90 0 0"
+                contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+          <geom name="spool2_s2" type="cylinder" mass="0.444" size="0.03 0.01" pos="-0.5 -0.045 -0.1" euler="90 0 0"
+                contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+          <site name="A_s2"  pos=" 0.5  0.045 -0.1" size="0.005"/>
+          <site name="A2_s2" pos="-0.5 -0.045 -0.1" size="0.005"/>
+
+            <!-- Arm 1'-2': hinged at point 2 (C'), it goes down 1.7 m to point 2' -->
+            <body name="arm_s2" pos="0 0 -0.3">
+              <joint name="C_s2" type="hinge" axis="0 1 0" range="-55 55"/>
+              <geom name="arm_p_s2" type="box" mass="7.527" size="0.025 0.025" fromto="0  0.1 0  0  0.1 -1.7" material="metal"/>
+              <geom name="arm_n_s2" type="box" mass="7.527" size="0.025 0.025" fromto="0 -0.1 0  0 -0.1 -1.7" material="metal_transparent"/>
+              <geom name="pin_2_s2" type="cylinder" mass="0.277" size="0.0075" fromto="0 -0.1 -1.45  0 0.1 -1.45" material="metal"/>
+              <geom name="pulley2_s2"  type="cylinder" mass="0.444" size="0.03 0.01" pos="0  0.045 -1.45" euler="90 0 0"
+                        contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+              <geom name="pulley2b_s2" type="cylinder" mass="0.444" size="0.03 0.01" pos="0 -0.045 -1.45" euler="90 0 0"
+                        contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+              <site name="below2_s2"  pos="0  0.045 -1.5" size="0.005"/>
+              <site name="below2b_s2" pos="0 -0.045 -1.5" size="0.005"/>
+
+              <!-- Load hanging at point 2'. Change the mass here (in kg). -->
+              <body name="load_s2" pos="0 0 -1.7">
+                <inertial pos="0 0 0" mass="50" diaginertia="0 0 0"/>
+                <site name="point2_s2" size="0.04" rgba="1 0.8 0 1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+
+
+        <!-- CART PULLEYS: horizontal (z axis), beside A and A' (y = +-0.16, outside
+             the clones), at the height of their cables. The cable wraps behind them and goes back towards the same end. -->
+        <geom name="cart_pulley_A_front" type="cylinder" size="0.03 0.01" pos="0.5 0.16 -0.12" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <site name="behind_A_front" pos="0.5 0.1 -0.12" size="0.004"/>
+        <geom name="cart_pulley_A_back" type="cylinder" size="0.03 0.01" pos="0.5 -0.16 -0.12" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <site name="behind_A_back" pos="0.5 -0.1 -0.12" size="0.004"/>
+        <geom name="cart_pulley_A2_front" type="cylinder" size="0.03 0.01" pos="-0.5 0.16 -0.14" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <site name="behind_A2_front" pos="-0.5 0.1 -0.14" size="0.004"/>
+        <geom name="cart_pulley_A2_back" type="cylinder" size="0.03 0.01" pos="-0.5 -0.16 -0.14" mass="0.444" contype="0" conaffinity="0" rgba="0.15 0.15 0.15 1"/>
+        <site name="behind_A2_back" pos="-0.5 -0.1 -0.14" size="0.004"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- At C the arm overlaps BC, CA, CA2 and bar C: that's where the pivot is,
+       so the structure and the arm must not collide with each other -->
+  <contact>
+    <exclude body1="world" body2="T"/>
+    <exclude body1="world" body2="turntable"/>
+    <exclude body1="T" body2="turntable"/>
+    <exclude body1="turntable" body2="arm"/>
+    <exclude body1="T" body2="arm"/>
+    <exclude body1="arm" body2="stage2"/>
+    <exclude body1="arm" body2="arm_s2"/>
+    <exclude body1="stage2" body2="arm_s2"/>
+  </contact>
+
+  <!-- The cables: F -> under pulley 2 -> spool at A (and the mirror), the same in both stages.
+       7x19 steel wire ropes, 1770 N/mm2 steel (breaking ~ 0.33 x d^2 x 1770, working = breaking / 5):
+       - stage 1: 8 mm, breaking 37.4 kN, working 7.5 kN. It carries stage 2 and the load: ~5 kN peak.
+       - stage 2: 5 mm, breaking 14.6 kN, working 2.9 kN. ~2.2 kN peak with 70 kg.
+       Diameters are set in control.py (CABLE_DIAMETER); here only the graphics matter (width = radius).
+
+       Here there is only the cable path. The force is computed by control.py:
+       tension = EA/L x elongation when taut, zero when slack
+       (a cable can only pull). -->
+  <tendon>
+    <spatial name="cable1" width="0.004" rgba="0.9 0.5 0.1 1">
+      <site site="F"/>
+      <geom geom="pulley2" sidesite="below2"/>
+      <site site="A"/>
+    </spatial>
+    <spatial name="cable2" width="0.004" rgba="0.9 0.5 0.1 1">
+      <site site="F2"/>
+      <geom geom="pulley2b" sidesite="below2b"/>
+      <site site="A2"/>
+    </spatial>
+    <!-- stage 2 cables: same paths, on the _s2 parts -->
+    <spatial name="cable1_s2" width="0.0025" rgba="0.9 0.5 0.1 1">
+      <site site="F_s2"/>
+      <geom geom="pulley2_s2" sidesite="below2_s2"/>
+      <site site="A_s2"/>
+    </spatial>
+    <spatial name="cable2_s2" width="0.0025" rgba="0.9 0.5 0.1 1">
+      <site site="F2_s2"/>
+      <geom geom="pulley2b_s2" sidesite="below2b_s2"/>
+      <site site="A2_s2"/>
+    </spatial>
+    <!-- cart cables (double X): motor -> behind the pulley on the turntable -> anchor point.
+         5 mm steel wire rope; the force is computed by control.py. -->
+    <spatial name="cable_r2_front" width="0.0025" rgba="0.2 0.6 0.9 1">
+      <site site="motor_r2_front"/>
+      <geom geom="cart_pulley_A_front" sidesite="behind_A_front"/>
+      <site site="anchor_r2_front"/>
+    </spatial>
+    <spatial name="cable_r2_back" width="0.0025" rgba="0.2 0.6 0.9 1">
+      <site site="motor_r2_back"/>
+      <geom geom="cart_pulley_A_back" sidesite="behind_A_back"/>
+      <site site="anchor_r2_back"/>
+    </spatial>
+    <spatial name="cable_r_front" width="0.0025" rgba="0.2 0.6 0.9 1">
+      <site site="motor_r_front"/>
+      <geom geom="cart_pulley_A2_front" sidesite="behind_A2_front"/>
+      <site site="anchor_r_front"/>
+    </spatial>
+    <spatial name="cable_r_back" width="0.0025" rgba="0.2 0.6 0.9 1">
+      <site site="motor_r_back"/>
+      <geom geom="cart_pulley_A2_back" sidesite="behind_A2_back"/>
+      <site site="anchor_r_back"/>
+    </spatial>
+  </tendon>
+
+  <!-- The two winders are linked: as much cable as A winds, A' unwinds,
+       and vice versa. One slider = centimeters wound on A from the start
+       (+ moves the arm towards A, - towards A'). The motor gets there at limited
+       speed and then stays still, locked. control.py does the math.
+       gainprm="0": the slider pushes nothing by itself, it's just the knob.
+       55 degree limit: reached with 57.9 cm, so the slider stops there. -->
+  <actuator>
+    <general name="winding" tendon="cable1" gainprm="0" ctrlrange="-57.9 57.9"/>
+    <!-- stage 2: same geometry, same slider -->
+    <general name="winding_s2" tendon="cable1_s2" gainprm="0" ctrlrange="-57.9 57.9"/>
+
+    <!-- Switch for the automatic sweep (reach_zone.py): 1 = the arm moves by itself through
+         the whole reachable zone (red halo), 0 = off. -->
+    <general name="auto_sweep" joint="C" gainprm="0" ctrlrange="0 1"/>
+
+    <!-- Cart (control.py): where to bring the T along the rails (m) and how to rotate
+         the turntable (degrees). The 4 motors at the ends of the rails get there together. -->
+    <general name="position_y" joint="Y" gainprm="0" ctrlrange="-1.2 1.2"/>
+    <general name="rotation" joint="R" gainprm="0" ctrlrange="-65 45"/>
+  </actuator>
+
+</mujoco>

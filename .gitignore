@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+# old Italian versions, kept locally only
+controllo.py
+zona.py
+prova_spalla.mjcf.xml
